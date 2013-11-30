@@ -34,7 +34,7 @@ int cx,cy;
 int mx,my;
 
 enum Player {White,Black,None};
-enum Piece {Pawn,Tower,Horse,Bishop,King,Queen,NoPiece};
+enum Piece {Pawn,Tower,Knight,Bishop,King,Queen,NoPiece};
 
 Player player = White;
 int numMoves = 0;
@@ -110,7 +110,7 @@ Piece rankPiece (int x, int y) {
 	if (p == Pt || p == Bt)
 		return Tower;
 	if (p == Pc || p == Bc)
-		return Horse;
+		return Knight;
 	if (p == Pb || p == Bb)
 		return Bishop;
 	if (p == Pa || p == Ba)
@@ -197,28 +197,47 @@ bool validLine (int x, int y, int ix, int iy,
 	return false;
 }
 
+bool validLinePawn (int x, int y, int ix, int iy,
+			   int dx, int dy,
+			   int len) {
+	int i;
+	for (i=0;i<len;i++) {
+		x += ix;
+		y += iy;
+
+		if (x == dx && y == dy && board[y][x] != __)
+			return true;
+		if (x < 0 || x > 7)
+			return false;
+		if (y < 0 || y > 7)
+			return false;
+	} 
+
+	return false;
+}
+
 int validPawn (int x, int y,
 			 int dx, int dy, Player pl) {
-	if (dx != x)
+	if (pl == Black) {
+		if (validLine(x,y,0,1,dx,dy,(y==1)?2:1))
+			return -1;
+
+		if (validLinePawn(x,y,1,1,dx,dy,1))
+			return -1;
+		if (validLinePawn(x,y,-1,1,dx,dy,1))
+			return -1;
+
 		return 4;
-	if (pl == Black) { 
-		if (dy == y+1) {
-			return -1;
-		} else {
-			if (dy == y+2 && y == 1)
-				return -1;
-			else
-				return 4;
-		}
 	} else {
-		if (dy == y-1) {
+		if (validLine(x,y,0,-1,dx,dy,(y==6)?2:1))
 			return -1;
-		} else {
-			if (dy == y-2 && y == 6)
-				return -1;
-			else
-				return 4;
-		}				
+
+		if (validLinePawn(x,y,1,-1,dx,dy,1))
+			return -1;
+		if (validLinePawn(x,y,-1,-1,dx,dy,1))
+			return -1;
+
+		return 4;
 	}
 }
 
@@ -298,6 +317,30 @@ int validQueen (int x,int y,
 	return 4;
 }
 
+int validKnight (int x,int y,
+				 int dx, int dy, Player pl) {
+
+	if (validLine(x,y,-1,-2,dx,dy,8))
+		return -1;
+	if (validLine(x,y,1,-2,dx,dy,8))
+		return -1;
+	if (validLine(x,y,-2,-1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,-2,1,dx,dy,8))
+		return -1;
+
+	if (validLine(x,y,2,1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,2,-1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,1,2,dx,dy,8))
+		return -1;
+	if (validLine(x,y,-1,2,dx,dy,8))
+		return -1;
+
+	return 4;
+}
+
 int isValid (int x, int y,
 			 int dx, int dy,
 			 Piece pi, Player pl) {
@@ -316,6 +359,9 @@ int isValid (int x, int y,
 		break;
 		case Bishop:
 			return validBishop(x,y,dx,dy,pl);
+		break;
+		case Knight:
+			return validKnight(x,y,dx,dy,pl);
 		break;
 		default:
 		break;

@@ -12,6 +12,9 @@ No external libraries needed.
 Controls:
 
 WASD :  Move
+
 Space:  Select
+
 Enter:  Play/Accept
+
 q    :  Quit

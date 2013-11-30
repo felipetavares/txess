@@ -57,7 +57,7 @@ string markColor = "\33[7m";
 string selectionColor = "\33[4m";
 string tableColor = "\33[41m";
 string toolbarColor = "\33[1m";
-string B = "\33[32m";
+string B = "\33[30m";
 string W = "\33[37m";
 string n = "\33[0m";
 
@@ -86,7 +86,8 @@ string errors[] = {
 	"Trying to move a piece on itself!",
 	"Trying to move blank space!",
 	"Trying to move opponent piece!",
-	"Trying to capture your own piece!"
+	"Trying to capture your own piece!",
+	"Invalid move!"
 };
 
 string pieceLongNames[] = {
@@ -174,6 +175,155 @@ void draw () {
 	cout << nendl;
 }
 
+bool validLine (int x, int y, int ix, int iy,
+			   int dx, int dy,
+			   int len) {
+	int i;
+	for (i=0;i<len;i++) {
+		x += ix;
+		y += iy;
+
+		if (x == dx && y == dy)
+			return true;
+		if (x < 0 || x > 7)
+			return false;
+		if (y < 0 || y > 7)
+			return false;
+
+		if (board[y][x] != __)
+			return false;
+	} 
+
+	return false;
+}
+
+int validPawn (int x, int y,
+			 int dx, int dy, Player pl) {
+	if (dx != x)
+		return 4;
+	if (pl == Black) { 
+		if (dy == y+1) {
+			return -1;
+		} else {
+			if (dy == y+2 && y == 1)
+				return -1;
+			else
+				return 4;
+		}
+	} else {
+		if (dy == y-1) {
+			return -1;
+		} else {
+			if (dy == y-2 && y == 6)
+				return -1;
+			else
+				return 4;
+		}				
+	}
+}
+
+int validTower (int x,int y,
+				int dx, int dy, Player pl) {
+	if (validLine(x,y,-1,0,dx,dy,8))
+		return -1;
+	if (validLine(x,y,1,0,dx,dy,8))
+		return -1;
+	if (validLine(x,y,0,-1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,0,1,dx,dy,8))
+		return -1;
+
+	return 4;
+}
+
+int validBishop (int x,int y,
+				int dx, int dy, Player pl) {
+	if (validLine(x,y,-1,1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,1,-1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,-1,-1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,1,1,dx,dy,8))
+		return -1;
+
+	return 4;
+}
+
+int validKing (int x,int y,
+				int dx, int dy, Player pl) {
+
+	if (validLine(x,y,-1,0,dx,dy,1))
+		return -1;
+	if (validLine(x,y,1,0,dx,dy,1))
+		return -1;
+	if (validLine(x,y,0,-1,dx,dy,1))
+		return -1;
+	if (validLine(x,y,0,1,dx,dy,1))
+		return -1;
+
+	if (validLine(x,y,1,1,dx,dy,1))
+		return -1;
+	if (validLine(x,y,-1,1,dx,dy,1))
+		return -1;
+	if (validLine(x,y,1,-1,dx,dy,1))
+		return -1;
+	if (validLine(x,y,-1,-1,dx,dy,1))
+		return -1;
+
+	return 4;
+}
+
+int validQueen (int x,int y,
+				int dx, int dy, Player pl) {
+
+	if (validLine(x,y,-1,0,dx,dy,8))
+		return -1;
+	if (validLine(x,y,1,0,dx,dy,8))
+		return -1;
+	if (validLine(x,y,0,-1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,0,1,dx,dy,8))
+		return -1;
+
+	if (validLine(x,y,1,1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,-1,1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,1,-1,dx,dy,8))
+		return -1;
+	if (validLine(x,y,-1,-1,dx,dy,8))
+		return -1;
+
+	return 4;
+}
+
+int isValid (int x, int y,
+			 int dx, int dy,
+			 Piece pi, Player pl) {
+	switch (pi) {
+		case Pawn:
+			return validPawn(x,y,dx,dy,pl);
+		break;
+		case Tower:
+			return validTower(x,y,dx,dy,pl);
+		break;
+		case King:
+			return validKing(x,y,dx,dy,pl);
+		break;
+		case Queen:
+			return validQueen(x,y,dx,dy,pl);
+		break;
+		case Bishop:
+			return validBishop(x,y,dx,dy,pl);
+		break;
+		default:
+		break;
+	}
+
+	return -1;
+}
+
 int move (int x, int y,
 		  int dx, int dy) {
 	if (dx == x && dy == y)
@@ -186,12 +336,17 @@ int move (int x, int y,
 		return 3;
 
 	if (board[y][x] != __) { 
-		board[dy][dx] = board[y][x];
-		board[y][x] = __;
+		int valid = isValid (x,y,dx,dy,rankPiece(x,y),rankColor(x,y));
 
-		player = (Player)!(bool)player;
-		numMoves++;
-		return -1;
+		if (valid < 0) {
+			board[dy][dx] = board[y][x];
+			board[y][x] = __;
+
+			player = (Player)!(bool)player;
+			numMoves++;
+			return -1;
+		} else
+			return valid;
 	} else {
 		return 1;
 	}

@@ -33,6 +33,12 @@ int cx,cy;
 // mark
 int mx,my;
 
+enum Player {White,Black,None};
+enum Piece {Pawn,Tower,Horse,Bishop,King,Queen,NoPiece};
+
+Player player = White;
+int numMoves = 0;
+
 int board [8][8] = {
 	{Pt,Pc,Pb,Pa,Pe,Pb,Pc,Pt},
 	{Pp,Pp,Pp,Pp,Pp,Pp,Pp,Pp},
@@ -44,15 +50,21 @@ int board [8][8] = {
 	{Bt,Bc,Bb,Ba,Be,Bb,Bc,Bt},
 };
 
-string moveUp = "\33[10A";
+string moveUp = "\33[11A";
 string eraseLine = "\r\33[2K";
 
 string markColor = "\33[7m";
 string selectionColor = "\33[4m";
 string tableColor = "\33[41m";
-string B = "\33[30m";
+string toolbarColor = "\33[1m";
+string B = "\33[32m";
 string W = "\33[37m";
 string n = "\33[0m";
+
+string tableColor2[] = {
+	"\33[41m",
+	"\33[44m"
+};
 
 string piece [13] = {
 	B+" p"+n,B+" t"+n,B+" h"+n,B+" b"+n,B+" k"+n,B+" q"+n,
@@ -71,12 +83,65 @@ string lines [8] = {
 string nendl = "\n\r";
 
 string errors[] = {
-	"Trying to move a piece on itself",
-	"Trying to move blank space"
+	"Trying to move a piece on itself!",
+	"Trying to move blank space!",
+	"Trying to move opponent piece!",
+	"Trying to capture your own piece!"
 };
+
+string pieceLongNames[] = {
+	"Pawn","Tower","Knigth","Bishop","King","Queen","None",
+};
+
+Player rankColor (int x,int y) {
+	if (board[y][x] == __)
+		return None;
+
+	if (board[y][x] >= 0 && board[y][x] <= 5)
+		return Black;
+	else
+		return White;
+}
+
+Piece rankPiece (int x, int y) {
+	int p = board[y][x];
+
+	if (p == Pt || p == Bt)
+		return Tower;
+	if (p == Pc || p == Bc)
+		return Horse;
+	if (p == Pb || p == Bb)
+		return Bishop;
+	if (p == Pa || p == Ba)
+		return Queen;
+	if (p == Pe || p == Be)
+		return King;
+	if (p == Pp || p == Bp)
+		return Pawn;
+
+	return NoPiece;
+}
 
 void draw () {
 	int x,y;
+
+	cout << "  ";
+	cout << toolbarColor;
+
+	if (player == White)
+		cout << W+"White";
+	else
+		cout << B+"Black";
+
+	cout << " #" << numMoves;
+
+	cout << " " << pieceLongNames[(int)rankPiece(mx,my)];
+
+	cout << " " << columns[cx] << lines[cy];
+
+	cout << "     ";
+
+	cout << n << nendl;
 
 	for (y=0;y<8;y++) {
 		if (cy == y) cout << selectionColor;
@@ -84,7 +149,7 @@ void draw () {
 		cout << lines[y] << n << " ";
 		
 		for (x=0;x<8;x++) {
-			cout << tableColor;
+			cout << tableColor2[(y*7+x)%2];
 
 			if (cx == x && cy == y)
 				cout << selectionColor;		
@@ -114,10 +179,18 @@ int move (int x, int y,
 	if (dx == x && dy == y)
 		return 0;
 
+	if (rankColor(x,y) != player)
+		return 2;
+
+	if (rankColor(x,y) == rankColor(dx,dy))
+		return 3;
 
 	if (board[y][x] != __) { 
 		board[dy][dx] = board[y][x];
 		board[y][x] = __;
+
+		player = (Player)!(bool)player;
+		numMoves++;
 		return -1;
 	} else {
 		return 1;
